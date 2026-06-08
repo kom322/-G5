@@ -1,42 +1,45 @@
-import React, { useState } from 'react'; // 💡 useState를 새로 가져옵니다!
+import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
+// 💡 1. 리얼리티 반영: 달러 대신 일본 엔(JPY) 기준으로 PS5 가격을 세팅했습니다 (약 7만 엔 대)
 const mockProductHistory = [
-  { date: '2026-05-28', Amazon: 499.99, Rakuten: 450.00, Yahoo: 480.00 },
-  { date: '2026-05-29', Amazon: 499.99, Rakuten: 460.00, Yahoo: 475.00 },
-  { date: '2026-05-30', Amazon: 479.99, Rakuten: 455.00, Yahoo: 470.00 },
-  { date: '2026-05-31', Amazon: 479.99, Rakuten: 440.00, Yahoo: 450.00 },
-  { date: '2026-06-01', Amazon: 459.99, Rakuten: 435.00, Yahoo: 445.00 },
+  { date: '2026-05-28', Amazon: 74900, Rakuten: 73500, Yahoo: 75000 },
+  { date: '2026-05-29', Amazon: 74500, Rakuten: 73500, Yahoo: 74800 },
+  { date: '2026-05-30', Amazon: 74000, Rakuten: 73000, Yahoo: 74500 },
+  { date: '2026-05-31', Amazon: 73800, Rakuten: 72500, Yahoo: 74000 },
+  { date: '2026-06-01', Amazon: 73500, Rakuten: 72000, Yahoo: 73800 },
 ];
 
 function App() {
-  // 리액트의 기억 장치(State) 2개를 만듭니다.
-  // 1. 현재 검색창에 사용자가 타이핑하고 있는 임시 글자
   const [inputText, setInputText] = useState(''); 
-  // 2. 검색 버튼을 눌렀을 때 최종적으로 확정되어 제목에 뜰 상품명 (기본값: PlayStation 5)
   const [productName, setProductName] = useState('PlayStation 5');
 
-  // 검색(検索)ボタンを押したときの処理 (버튼 클릭 시 실행될 함수)
   const handleSearch = () => {
-    if (inputText.trim() !== '') { // 빈칸이 아닐 때만 작동
-      setProductName(inputText);   // 임시 글자를 최종 상품명으로 확정!
-      setInputText('');            // 검색창은 다시 빈칸으로 청소
+    if (inputText.trim() !== '') {
+      setProductName(inputText);   
+      setInputText('');            
+    }
+  };
+
+  // 💡 2. 엔터키 감지 함수 추가: 사용자가 키보드를 누를 때마다 이 함수가 실행됩니다.
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') { // 누른 키가 'Enter'라면
+      handleSearch();        // 검색 버튼을 누른 것과 똑같이 handleSearch를 실행!
     }
   };
 
   return (
     <div style={{ backgroundColor: 'white', color: 'black', padding: '40px', width: '800px', margin: '50px auto', border: '2px solid #ccc', borderRadius: '12px' }}>
       
-      {/* 💡 고정되어 있던 'PlayStation 5' 대신, 기억 장치에 있는 {productName}을 띄웁니다! */}
       <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>📈 {productName} ECサイト価格比較</h1>
 
-      {/* 💡 검색창 UI 시작 */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px' }}>
         <input 
           type="text" 
           value={inputText}
-          onChange={(e) => setInputText(e.target.value)} // 글자를 칠 때마다 임시 글자를 업데이트
-          placeholder="商品を検索" 
+          onChange={(e) => setInputText(e.target.value)} 
+          onKeyDown={handleKeyDown} // 💡 3. 입력창에 엔터키 감지 센서를 달아줍니다!
+          placeholder="商品を検索 (例: RTX 4090)" 
           style={{ padding: '10px', width: '300px', fontSize: '16px', border: '1px solid #ccc', borderRadius: '4px 0 0 4px' }}
         />
         <button 
@@ -46,13 +49,14 @@ function App() {
           検索
         </button>
       </div>
-      {/* 검색창 UI 끝 */}
       
       <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center' }}>
-        <LineChart width={750} height={400} data={mockProductHistory}>
+        {/* 💡 4. 엔화는 글자 길이가 길어서 왼쪽 축 숫자가 잘릴 수 있으므로 margin(여백) 속성에서 left를 30으로 살짝 넓혀줬습니다 */}
+        <LineChart width={750} height={400} data={mockProductHistory} margin={{ top: 5, right: 20, left: 30, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" stroke="black" />
-          <YAxis domain={['dataMin - 20', 'auto']} stroke="black" />
+          {/* 💡 5. 단위가 커졌으므로, Y축이 20씩 변하는 대신 1000엔 단위로 여유를 갖게 했습니다 */}
+          <YAxis domain={['dataMin - 1000', 'auto']} stroke="black" />
           <Tooltip />
           <Legend />
           
