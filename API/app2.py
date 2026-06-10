@@ -117,7 +117,7 @@ def fetch_rakuten_price(keyword):
         return None
         
     print("  [楽天] 検索中...")
-    url = "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/v1"
+    url = "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260401"
     
     # ヘッダーには Access Key を設定
     rakuten_headers = HEADERS.copy()
