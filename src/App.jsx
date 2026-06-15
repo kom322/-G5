@@ -102,7 +102,7 @@ function FavoritesPlaceholder() {
   return (
     <div style={{ textAlign: 'center', padding: '80px 20px' }}>
       <h2>⭐ お気に入り（前回価格との比較）</h2>
-      <p style={{ color: '#666', marginTop: '20px', fontSize: '18px' }}>現在、友達が絶賛開発中です！<br />後ほどここに機能が組み込まれます。</p>
+      <p style={{ color: '#666', marginTop: '20px', fontSize: '18px' }}>現在、開発中です！<br />後ほどここに機能が組み込まれます。</p>
     </div>
   );
 }
