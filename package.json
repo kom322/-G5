@@ -1,0 +1,13 @@
+{
+  "name": "anshin-kakaku-navi",
+  "version": "1.0.0",
+  "description": "価格比較＋安全スコアツール",
+  "type": "module",
+  "scripts": {
+    "demo": "node demo.js",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.0"
+  }
+}

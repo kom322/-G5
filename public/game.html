@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⛏️ トロッコチャレンジ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── 鉱山背景 ── */
+    body {
+      font-family: "Hiragino Sans", "Meiryo", sans-serif;
+      color: #fffffe;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      /* 岩場のような暗い褐色系グラデーション */
+      background-color: #0a0806;
+      background-image:
+        radial-gradient(ellipse 90% 60% at 50% 110%, #1c1408 0%, transparent 70%),
+        radial-gradient(ellipse 40% 80% at 0%   50%, #110e08 0%, transparent 60%),
+        radial-gradient(ellipse 40% 80% at 100% 50%, #110e08 0%, transparent 60%);
+      /* 石のひび割れ風テクスチャ */
+      background-size: 100% 100%, 100% 100%, 100% 100%;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* 石のひびテクスチャ（pseudoelement） */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(
+          47deg,
+          rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px,
+          transparent 1px, transparent 22px
+        ),
+        repeating-linear-gradient(
+          -43deg,
+          rgba(255,255,255,0.008) 0px, rgba(255,255,255,0.008) 1px,
+          transparent 1px, transparent 28px
+        );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* 鍾乳洞の天井（ギザギザシルエット） */
+    .cave-ceiling {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 130px;
+      background: linear-gradient(to bottom, #040302 0%, rgba(4,3,2,0) 100%);
+      clip-path: polygon(
+        0% 0%, 100% 0%, 100% 52%,
+        97% 72%, 94% 48%, 91% 78%, 88% 42%,
+        85% 68%, 82% 38%, 79% 62%, 76% 32%,
+        73% 58%, 70% 28%, 67% 62%, 64% 34%,
+        61% 58%, 58% 28%, 55% 55%, 52% 22%,
+        49% 52%, 46% 26%, 43% 58%, 40% 30%,
+        37% 62%, 34% 28%, 31% 58%, 28% 36%,
+        25% 68%, 22% 42%, 19% 74%, 16% 38%,
+        13% 62%, 10% 30%, 7% 68%, 4% 42%,
+        1% 58%, 0% 45%
+      );
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* 洞窟の左右の壁（薄暗い光のにじみ） */
+    .cave-wall-left, .cave-wall-right {
+      position: fixed;
+      top: 0; bottom: 0;
+      width: 80px;
+      pointer-events: none;
+      z-index: 9;
+    }
+    .cave-wall-left  { left: 0;  background: linear-gradient(to right, rgba(4,3,2,0.7), transparent); }
+    .cave-wall-right { right: 0; background: linear-gradient(to left,  rgba(4,3,2,0.7), transparent); }
+
+    /* ── スクリーン共通 ── */
+    .screen { width: 100%; max-width: 680px; text-align: center; display: none; position: relative; z-index: 1; }
+    .screen.active { display: block; }
+
+    /* ── スタート画面 ── */
+    #start h1 { font-size: 2rem; margin-bottom: 8px; }
+    #start .subtitle { color: #a79b7a; margin-bottom: 28px; font-size: 0.92rem; line-height: 1.8; }
+
+    .settings {
+      background: rgba(30,24,16,0.9);
+      border: 1px solid #3a3020;
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 22px;
+      text-align: left;
+    }
+    .settings label { display: block; font-size: 0.83rem; color: #a79b7a; margin-bottom: 5px; }
+    .settings select, .settings input {
+      width: 100%;
+      background: #0f0b06;
+      color: #fffffe;
+      border: 1px solid #3a3020;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 0.92rem;
+      margin-bottom: 14px;
+    }
+    .price-range { display: flex; gap: 10px; }
+    .price-range input { margin-bottom: 0; }
+
+    .btn {
+      background: #c97800;
+      color: #fffffe;
+      border: none;
+      border-radius: 12px;
+      padding: 13px 38px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.15s;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+    .btn:hover  { background: #e08800; transform: scale(1.02); }
+    .btn:active { transform: scale(0.97); }
+    .btn-sub {
+      background: rgba(30,24,16,0.9);
+      color: #a79b7a;
+      border: 1px solid #3a3020;
+      margin-top: 10px;
+    }
+    .btn-sub:hover { background: rgba(50,40,25,0.9); }
+
+    /* ── ラウンド情報 ── */
+    #round-label     { color: #a79b7a; font-size: 0.83rem; margin-bottom: 2px; }
+    #difficulty-label { font-size: 1.1rem; color: #c97800; letter-spacing: 3px; margin-bottom: 8px; }
+    #question        { font-size: 1.25rem; font-weight: bold; margin-bottom: 14px; }
+
+    /* ── 鉱山トロッコレール ── */
+    .mine-scene {
+      position: relative;
+      width: 100%;
+      height: 88px;
+      margin: 4px 0 14px;
+      border-radius: 10px;
+      background: linear-gradient(to bottom, #0e0a05 0%, #1a1508 60%, #0e0a05 100%);
+      border: 1px solid #2a2010;
+      overflow: hidden;
+    }
+
+    /* 枕木（::before） */
+    .mine-scene::before {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      left: 0; right: 0;
+      height: 24px;
+      background: repeating-linear-gradient(
+        to right,
+        #2e2510 0px, #2e2510 13px,
+        transparent 13px, transparent 26px
+      );
+    }
+
+    /* レール上下2本（ベース：暗い色） */
+    .rail {
+      position: absolute;
+      left: 0; right: 0;
+      height: 3px;
+      border-radius: 2px;
+      background: linear-gradient(to right, #4a4030, #7a6840, #9a8850, #7a6840, #4a4030);
+    }
+    .rail-top    { bottom: 21px; }
+    .rail-bottom { bottom: 11px; }
+
+    /* ゲージ用レール（トロッコが通過した部分が光る） */
+    .rail-fill {
+      position: absolute;
+      left: 0;
+      height: 3px;
+      width: 8%;        /* JS で更新 */
+      border-radius: 2px;
+      background: linear-gradient(to right, #a06000, #e8a020, #ffd060);
+      box-shadow: 0 0 8px rgba(230,160,0,0.8), 0 0 16px rgba(230,160,0,0.3);
+      transition: width 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1;
+    }
+    .rail-fill-top    { bottom: 21px; }
+    .rail-fill-bottom { bottom: 11px; }
+
+    /* 丸形チェックポイントマーカー */
+    .track-checkpoints {
+      position: absolute;
+      bottom: 11px;
+      left: 18%;
+      right: 6%;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      height: 13px;
+      z-index: 2;
+    }
+    .checkpoint {
+      width: 13px; height: 13px;
+      border-radius: 50%;
+      background: #2a2010;
+      border: 2px solid #5a4820;
+      transition: background 0.4s, border-color 0.4s, box-shadow 0.4s;
+      position: relative;
+      top: 0;
+    }
+    .checkpoint.done {
+      background: #c97800;
+      border-color: #e8a020;
+      box-shadow: 0 0 6px rgba(200,120,0,0.8);
+    }
+    .checkpoint.goal {
+      background: transparent;
+      border: none;
+      font-size: 1.1rem;
+      width: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* トロッコ本体 */
+    .trolley {
+      position: absolute;
+      bottom: 12px;
+      left: 8%;
+      font-size: 2rem;
+      line-height: 1;
+      transform: translateX(-50%) scaleX(-1);  /* 右向きに反転 */
+      transform-origin: bottom center;
+      z-index: 3;
+      filter: drop-shadow(0 0 5px rgba(200,120,0,0.4));
+    }
+
+    /* トロッコ位置トランジション */
+    .trolley.moving {
+      transition: left 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes troll-bounce {
+      0%   { transform: translateX(-50%) scaleX(-1) translateY(0)    rotate(0deg);  }
+      20%  { transform: translateX(-50%) scaleX(-1) translateY(-9px)  rotate(5deg);  }
+      45%  { transform: translateX(-50%) scaleX(-1) translateY(-12px) rotate(-4deg); }
+      70%  { transform: translateX(-50%) scaleX(-1) translateY(-5px)  rotate(3deg);  }
+      100% { transform: translateX(-50%) scaleX(-1) translateY(0)    rotate(0deg);  }
+    }
+    @keyframes troll-fall {
+      0%   { transform: translateX(-50%) scaleX(-1) rotate(0deg)   translateY(0);  opacity:1; }
+      20%  { transform: translateX(-30%) scaleX(-1) rotate(20deg)  translateY(6px); opacity:1; }
+      55%  { transform: translateX(0%)   scaleX(-1) rotate(65deg)  translateY(28px); opacity:.7; }
+      100% { transform: translateX(30%)  scaleX(-1) rotate(105deg) translateY(75px); opacity:0; }
+    }
+    @keyframes troll-victory {
+      0%   { left: 8%;   opacity: 0; }
+      5%   {             opacity: 1; }
+      85%  {             opacity: 1; }
+      100% { left: 110%; opacity: 0; }
+    }
+
+    .trolley.bounce  { animation: troll-bounce  0.7s ease; }
+    .trolley.fall    { animation: troll-fall    0.95s ease-out forwards; }
+    .trolley.victory { transition: none !important; animation: troll-victory 1.5s ease-in forwards; }
+
+    /* ── カード ── */
+    .cards { display: flex; gap: 14px; align-items: stretch; margin-bottom: 14px; }
+
+    .card {
+      flex: 1;
+      background: rgba(26,20,12,0.92);
+      border: 2px solid #3a2e18;
+      border-radius: 14px;
+      padding: 18px 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s, background 0.2s;
+      position: relative;
+    }
+    .card:hover { border-color: #c97800; transform: translateY(-2px); background: rgba(36,28,16,0.95); }
+    .card.selected-correct { border-color: #2cb67d; background: rgba(20,46,32,0.95); }
+    .card.selected-wrong   { border-color: #e53170; background: rgba(46,20,20,0.95); }
+    .card.disabled { cursor: default; transform: none; }
+    .card.disabled:hover { border-color: #3a2e18; background: rgba(26,20,12,0.92); }
+
+    .card-img {
+      width: 100%; height: 105px;
+      object-fit: contain;
+      margin-bottom: 10px;
+      border-radius: 6px;
+    }
+    .card-emoji {
+      font-size: 2.6rem;
+      height: 105px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    .card-name {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      margin-bottom: 7px;
+      height: 2.8em;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .card-shop { font-size: 0.73rem; color: #8a7a5a; margin-bottom: 10px; }
+
+    .price-box {
+      background: #0a0806;
+      border-radius: 7px;
+      padding: 9px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+    }
+    .price-hidden   { color: #4a3e28; font-size: 0.95rem; }
+    .price-revealed { color: #c97800; }
+    .price-highest  { color: #2cb67d; }
+
+    .vs { display: flex; align-items: center; font-size: 1.4rem; font-weight: bold; color: #6a5a3a; flex-shrink: 0; }
+
+    .result-badge {
+      position: absolute;
+      top: -12px; left: 50%;
+      transform: translateX(-50%);
+      padding: 3px 13px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .badge-correct { background: #2cb67d; color: white; }
+    .badge-wrong   { background: #e53170; color: white; }
+    .badge-answer  { background: #c97800; color: #fffffe; }
+
+    #result-msg { font-size: 1.05rem; margin-bottom: 12px; min-height: 26px; }
+    .correct-msg { color: #2cb67d; }
+    .wrong-msg   { color: #e53170; }
+    #countdown   { color: #8a7a5a; font-size: 0.83rem; min-height: 20px; }
+
+    /* ── フィードバック大アイコン（○×） ── */
+    .feedback-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .feedback-symbol {
+      font-size: 12rem;
+      font-weight: 900;
+      opacity: 0;
+      line-height: 1;
+      text-shadow: 0 0 60px currentColor;
+    }
+    @keyframes sym-correct {
+      0%   { transform: scale(0.1) rotate(-15deg); opacity: 0; }
+      35%  { transform: scale(1.35) rotate(4deg);  opacity: 1; }
+      65%  { transform: scale(1)   rotate(0);      opacity: 1; }
+      100% { transform: scale(1)   rotate(0);      opacity: 0; }
+    }
+    @keyframes sym-wrong {
+      0%   { transform: scale(0.1) rotate(15deg);  opacity: 0; }
+      35%  { transform: scale(1.35) rotate(-4deg); opacity: 1; }
+      65%  { transform: scale(1)    rotate(0);     opacity: 1; }
+      100% { transform: scale(1)    rotate(0);     opacity: 0; }
+    }
+    .feedback-symbol.show-correct { color: #2cb67d; animation: sym-correct 1.1s ease forwards; }
+    .feedback-symbol.show-wrong   { color: #e53170; animation: sym-wrong   1.1s ease forwards; }
+
+    /* ── パーティクル ── */
+    #particles { position: fixed; inset: 0; pointer-events: none; z-index: 150; overflow: hidden; }
+    @keyframes particle-fall {
+      0%   { transform: translateY(0)     rotate(0deg);   opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0.2; }
+    }
+
+    /* ── ゲームオーバー / 勝利 ── */
+    #gameover h2 { font-size: 2rem; margin-bottom: 10px; color: #e53170; }
+    #victory  h2 { font-size: 2.2rem; margin-bottom: 6px; color: #c97800; }
+    #gameover .sub, #victory .sub { color: #a79b7a; margin-bottom: 26px; font-size: 0.92rem; line-height: 1.8; }
+    .score-display { font-size: 2.8rem; font-weight: bold; margin: 14px 0 26px; }
+    .win-big { font-size: 3.5rem; margin: 8px 0 14px; display: block; }
+
+    @keyframes win-bounce {
+      0%,100% { transform: translateY(0) scale(1); }
+      35%     { transform: translateY(-18px) scale(1.1); }
+      65%     { transform: translateY(-6px)  scale(1.04); }
+    }
+    #victory h2 { animation: win-bounce 0.9s ease 0.15s both; }
+
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      25%    {transform:translateX(-8px)}
+      75%    {transform:translateX(8px)}
+    }
+    .shake { animation: shake 0.4s ease; }
+  </style>
+</head>
+<body>
+
+<!-- 鉱山の天井・壁 -->
+<div class="cave-ceiling"></div>
+<div class="cave-wall-left"></div>
+<div class="cave-wall-right"></div>
+
+<!-- ○× フィードバックオーバーレイ -->
+<div class="feedback-overlay">
+  <div class="feedback-symbol" id="feedback-symbol"></div>
+</div>
+
+<!-- 紙吹雪コンテナ -->
+<div id="particles"></div>
+
+<!-- ─────────────── スタート画面 ─────────────── -->
+<div class="screen active" id="start">
+  <h1>⛏️ トロッコチャレンジ</h1>
+  <p class="subtitle">
+    鉱山の中を進むトロッコ…2つの商品、どちらが高い？<br>
+    5問連続正解でゴール！1問でも間違えたら谷底へ落下…
+  </p>
+  <div class="settings">
+    <label>ジャンル</label>
+    <select id="genre-select">
+      <option value="全て">全て</option>
+      <option value="家電">家電</option>
+      <option value="ファッション">ファッション</option>
+      <option value="キッチン">キッチン</option>
+      <option value="おもちゃ">おもちゃ</option>
+      <option value="スポーツ">スポーツ</option>
+    </select>
+    <label>価格帯</label>
+    <div class="price-range">
+      <input type="number" id="min-price" placeholder="最低価格" value="0" min="0">
+      <input type="number" id="max-price" placeholder="最高価格" value="999999" min="0">
+    </div>
+  </div>
+  <button class="btn" onclick="startGame()">⛏️ 掘り進む！</button>
+  <br>
+  <a href="/" style="color:#a79b7a;font-size:0.83rem;margin-top:14px;display:inline-block;">← 価格比較に戻る</a>
+</div>
+
+<!-- ─────────────── ゲーム画面 ─────────────── -->
+<div class="screen" id="game">
+  <div id="round-label">ラウンド 1 / 5</div>
+  <div id="difficulty-label">★☆☆☆☆</div>
+  <div id="question">💴 どちらが高い？</div>
+
+  <!-- レール＆トロッコ -->
+  <div class="mine-scene">
+    <div class="trolley" id="trolley">🚃</div>
+    <div class="rail rail-top"></div>
+    <div class="rail rail-bottom"></div>
+    <!-- 通過済み部分のゲージ -->
+    <div class="rail-fill rail-fill-top"    id="rail-fill-top"></div>
+    <div class="rail-fill rail-fill-bottom" id="rail-fill-bottom"></div>
+    <div class="track-checkpoints" id="checkpoints">
+      <div class="checkpoint" id="cp-1"></div>
+      <div class="checkpoint" id="cp-2"></div>
+      <div class="checkpoint" id="cp-3"></div>
+      <div class="checkpoint" id="cp-4"></div>
+      <div class="checkpoint goal">🏁</div>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card" id="card-a" onclick="selectCard('a')">
+      <div class="card-emoji" id="emoji-a">🛍️</div>
+      <img class="card-img" id="img-a" style="display:none" alt="">
+      <div class="card-name" id="name-a"></div>
+      <div class="card-shop" id="shop-a"></div>
+      <div class="price-box price-hidden" id="price-a">❓ タップして選ぶ</div>
+    </div>
+    <div class="vs">VS</div>
+    <div class="card" id="card-b" onclick="selectCard('b')">
+      <div class="card-emoji" id="emoji-b">🛍️</div>
+      <img class="card-img" id="img-b" style="display:none" alt="">
+      <div class="card-name" id="name-b"></div>
+      <div class="card-shop" id="shop-b"></div>
+      <div class="price-box price-hidden" id="price-b">❓ タップして選ぶ</div>
+    </div>
+  </div>
+
+  <div id="result-msg"></div>
+  <div id="countdown"></div>
+  <div id="retry-area" style="display:none; margin-top:12px;">
+    <button class="btn" style="padding:10px 28px;" onclick="loadRound()">🔄 再取得</button>
+    <button class="btn btn-sub" style="padding:10px 28px; margin-left:8px;" onclick="showStart()">設定を変える</button>
+  </div>
+</div>
+
+<!-- ─────────────── ゲームオーバー画面 ─────────────── -->
+<div class="screen" id="gameover">
+  <h2>💥 谷底へ落下！</h2>
+  <p class="sub">レールを踏み外してトロッコが落ちてしまいました…<br>もう一度挑戦！</p>
+  <div class="score-display" id="gameover-score"></div>
+  <button class="btn" onclick="startGame()">🔄 再挑戦</button>
+  <br>
+  <button class="btn btn-sub" onclick="showStart()">設定を変える</button>
+</div>
+
+<!-- ─────────────── クリア画面 ─────────────── -->
+<div class="screen" id="victory">
+  <span class="win-big">🎉🏆🎉</span>
+  <h2>ゴール！おめでとう！！</h2>
+  <p class="sub">5問全問正解！<br>トロッコは無事ゴールに到着しました！<br>あなたは価格の達人です！</p>
+  <div class="score-display">✨ 5 / 5 ✨</div>
+  <button class="btn" onclick="startGame()">🔄 もう一度</button>
+  <br>
+  <button class="btn btn-sub" onclick="showStart()">設定を変える</button>
+</div>
+
+<script>
+// ── トロッコの左位置（ラウンド開始前 = index 0、各ラウンドクリア後 = index round） ──
+// mine-sceneのleft%: チェックポイントと対応
+const TROLLEY_POS = [8, 25, 42, 59, 76, 94]; // index 0=スタート, 1〜5=ラウンドクリア後
+
+let state = {
+  round: 1,
+  correctCount: 0,
+  items: [],
+  answered: false,
+  genre: "全て",
+  minPrice: 0,
+  maxPrice: 999999,
+};
+
+// ── 画面切り替え ──────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+function showStart() { showScreen("start"); }
+
+// ── ゲーム開始 ────────────────────────────────────────────────────
+async function startGame() {
+  state.round        = 1;
+  state.correctCount = 0;
+  state.genre        = document.getElementById("genre-select").value;
+  state.minPrice     = parseInt(document.getElementById("min-price").value) || 0;
+  state.maxPrice     = parseInt(document.getElementById("max-price").value) || 999999;
+  resetTrolley();
+  showScreen("game");
+  await loadRound();
+}
+
+// ── ラウンド読み込み ──────────────────────────────────────────────
+async function loadRound() {
+  state.answered = false;
+  resetCards();
+  updateCheckpoints();
+
+  document.getElementById("round-label").textContent = `ラウンド ${state.round} / 5`;
+  const stars = "★".repeat(state.round) + "☆".repeat(5 - state.round);
+  document.getElementById("difficulty-label").textContent = stars;
+  document.getElementById("question").textContent = "💴 どちらが高い？";
+  document.getElementById("result-msg").textContent = "";
+  document.getElementById("result-msg").className = "";
+  document.getElementById("countdown").textContent = "";
+  document.getElementById("retry-area").style.display = "none";
+  document.getElementById("name-a").textContent = "読み込み中...";
+  document.getElementById("name-b").textContent = "読み込み中...";
+
+  try {
+    const res = await fetch(
+      `/api/game/round?genre=${encodeURIComponent(state.genre)}&min=${state.minPrice}&max=${state.maxPrice}&round=${state.round}`
+    );
+    if (!res.ok) throw new Error("API error");
+    state.items = await res.json();
+    renderItems();
+  } catch {
+    document.getElementById("result-msg").textContent = "商品の取得に失敗しました";
+    document.getElementById("result-msg").className = "wrong-msg";
+    document.getElementById("retry-area").style.display = "block";
+  }
+}
+
+// ── 商品表示 ──────────────────────────────────────────────────────
+function renderItems() {
+  ["a", "b"].forEach((side, i) => {
+    const item = state.items[i];
+    if (item.image) {
+      document.getElementById(`img-${side}`).src = item.image;
+      document.getElementById(`img-${side}`).style.display = "block";
+      document.getElementById(`emoji-${side}`).style.display = "none";
+    } else {
+      document.getElementById(`emoji-${side}`).textContent = getEmoji(item.name);
+      document.getElementById(`emoji-${side}`).style.display = "flex";
+      document.getElementById(`img-${side}`).style.display = "none";
+    }
+    document.getElementById(`name-${side}`).textContent = item.name;
+    document.getElementById(`shop-${side}`).textContent = item.shop;
+    document.getElementById(`price-${side}`).textContent = "❓ タップして選ぶ";
+    document.getElementById(`price-${side}`).className = "price-box price-hidden";
+  });
+}
+
+// ── カード選択（正誤判定・演出） ──────────────────────────────────
+function selectCard(selected) {
+  if (state.answered) return;
+  state.answered = true;
+
+  const a = state.items[0], b = state.items[1];
+  const isCorrect  = (selected === "a" ? a : b).price >= (selected === "a" ? b : a).price;
+  const higherSide = a.price >= b.price ? "a" : "b";
+
+  // 価格を表示
+  ["a", "b"].forEach((side, i) => {
+    const el = document.getElementById(`price-${side}`);
+    el.textContent = `¥ ${state.items[i].price.toLocaleString()}`;
+    el.className = `price-box ${side === higherSide ? "price-highest" : "price-revealed"}`;
+  });
+  document.getElementById("card-a").classList.add("disabled");
+  document.getElementById("card-b").classList.add("disabled");
+
+  showFeedback(isCorrect);
+
+  if (isCorrect) {
+    document.getElementById(`card-${selected}`).classList.add("selected-correct");
+    addBadge(`card-${selected}`, "✓ 正解！", "badge-correct");
+    document.getElementById("result-msg").textContent = "正解！⛏️";
+    document.getElementById("result-msg").className = "correct-msg";
+    state.correctCount++;
+
+    // トロッコをバウンス → 次の位置へ移動
+    const trolley = document.getElementById("trolley");
+    trolley.classList.add("bounce");
+    trolley.addEventListener("animationend", () => {
+      trolley.classList.remove("bounce");
+      trolley.classList.add("moving");
+      trolley.style.left = TROLLEY_POS[state.round] + "%";
+      updateCheckpoints();
+      updateRailGauge(state.round); // ゲージも一緒に伸びる
+    }, { once: true });
+
+    if (state.round >= 5) {
+      setTimeout(() => {
+        document.getElementById("trolley").classList.add("victory");
+        setTimeout(() => { launchParticles(); showScreen("victory"); }, 1200);
+      }, 1400);
+    } else {
+      let count = 2;
+      const cd = document.getElementById("countdown");
+      cd.textContent = `${count}秒後に次のラウンドへ...`;
+      const t = setInterval(() => {
+        count--;
+        if (count <= 0) { clearInterval(t); cd.textContent = ""; nextRound(); }
+        else cd.textContent = `${count}秒後に次のラウンドへ...`;
+      }, 1000);
+    }
+  } else {
+    document.getElementById(`card-${selected}`).classList.add("selected-wrong");
+    document.getElementById(`card-${selected}`).classList.add("shake");
+    addBadge(`card-${selected}`,  "✗ 不正解",   "badge-wrong");
+    addBadge(`card-${higherSide}`, "正解はこれ", "badge-answer");
+    document.getElementById("result-msg").textContent = "💥 レールから落下！";
+    document.getElementById("result-msg").className = "wrong-msg";
+
+    document.getElementById("trolley").classList.add("fall");
+
+    setTimeout(() => {
+      document.getElementById("gameover-score").textContent = `${state.correctCount} / 5 問正解`;
+      showScreen("gameover");
+    }, 1950);
+  }
+}
+
+// ── 次のラウンドへ ────────────────────────────────────────────────
+async function nextRound() {
+  state.round++;
+  await loadRound();
+}
+
+// ── ○× フィードバック ────────────────────────────────────────────
+function showFeedback(isCorrect) {
+  const sym = document.getElementById("feedback-symbol");
+  sym.textContent = isCorrect ? "○" : "×";
+  sym.className = "feedback-symbol " + (isCorrect ? "show-correct" : "show-wrong");
+  sym.addEventListener("animationend", () => { sym.className = "feedback-symbol"; }, { once: true });
+}
+
+// ── チェックポイント（通過マーカー）の更新 ───────────────────────
+function updateCheckpoints() {
+  for (let i = 1; i <= 4; i++) {
+    const cp = document.getElementById(`cp-${i}`);
+    // ラウンドクリア後（state.round > i）でdone
+    cp.classList.toggle("done", state.round > i);
+  }
+}
+
+// ── トロッコリセット ──────────────────────────────────────────────
+function resetTrolley() {
+  const t = document.getElementById("trolley");
+  t.className = "trolley";
+  t.style.left = TROLLEY_POS[0] + "%";
+  t.style.opacity = "1";
+  updateRailGauge(0);
+}
+
+// ── ゲージ（通過済みレール）の更新 ───────────────────────────────
+function updateRailGauge(completedRounds) {
+  const pct = TROLLEY_POS[completedRounds] + "%";
+  document.getElementById("rail-fill-top").style.width    = pct;
+  document.getElementById("rail-fill-bottom").style.width = pct;
+}
+
+// ── 勝利パーティクル ──────────────────────────────────────────────
+function launchParticles() {
+  const container = document.getElementById("particles");
+  container.innerHTML = "";
+  const colors = ["#c97800","#e8a020","#2cb67d","#e53170","#fffffe","#f9d71c","#7fd1ae"];
+  for (let i = 0; i < 80; i++) {
+    const p = document.createElement("div");
+    const size = 5 + Math.random() * 12;
+    p.style.cssText = `
+      position:absolute;
+      left:${Math.random()*100}vw;
+      top:-14px;
+      width:${size}px; height:${size}px;
+      border-radius:${Math.random() > 0.4 ? "50%" : "3px"};
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation:particle-fall ${1.1+Math.random()*2}s ease-in ${Math.random()*0.7}s forwards;
+    `;
+    container.appendChild(p);
+  }
+  setTimeout(() => { container.innerHTML = ""; }, 4500);
+}
+
+// ── カードリセット ────────────────────────────────────────────────
+function resetCards() {
+  ["a","b"].forEach(side => {
+    const card = document.getElementById(`card-${side}`);
+    card.className = "card";
+    card.querySelectorAll(".result-badge").forEach(b => b.remove());
+  });
+}
+
+// ── バッジ追加 ────────────────────────────────────────────────────
+function addBadge(cardId, text, cls) {
+  const badge = document.createElement("div");
+  badge.className = `result-badge ${cls}`;
+  badge.textContent = text;
+  document.getElementById(cardId).appendChild(badge);
+}
+
+// ── 商品名から絵文字を推定 ────────────────────────────────────────
+function getEmoji(name) {
+  if (/テレビ|カメラ|イヤホン|スマート|充電|PC|ハブ|掃除/.test(name)) return "📱";
+  if (/ドライヤー|電子レンジ|ケトル/.test(name)) return "🔌";
+  if (/スニーカー|靴|シューズ/.test(name)) return "👟";
+  if (/バッグ|トート/.test(name)) return "👜";
+  if (/Tシャツ|ジャケット|ダウン|靴下|マフラー/.test(name)) return "👕";
+  if (/時計/.test(name)) return "⌚";
+  if (/帽子/.test(name)) return "🧢";
+  if (/財布/.test(name)) return "👛";
+  if (/コーヒー/.test(name)) return "☕";
+  if (/鍋|フライパン|包丁|まな板/.test(name)) return "🍳";
+  if (/Nintendo|Switch|ゲーム/.test(name)) return "🎮";
+  if (/ぬいぐるみ|おもちゃ|レゴ|パズル/.test(name)) return "🧸";
+  if (/ランニング|スポーツ|ヨガ|テニス/.test(name)) return "🏃";
+  if (/プロテイン|サプリ/.test(name)) return "💪";
+  if (/水筒|タオル/.test(name)) return "🏋️";
+  return "🛍️";
+}
+</script>
+</body>
+</html>

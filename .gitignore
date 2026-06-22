@@ -1,0 +1,11 @@
+# APIキー（絶対にGitに入れない）
+.env
+
+# 個人のお気に入りデータ（各自のローカルに保存）
+data/favorites.json
+data/favorites_history.json
+data/snapshot.json
+
+# Node.js
+node_modules/
+npm-debug.log*
