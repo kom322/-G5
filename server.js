@@ -52,13 +52,18 @@ function saveFavoritesHistory(hist) {
   fs.writeFileSync(FAVORITES_HISTORY_PATH, JSON.stringify(hist, null, 2), "utf-8");
 }
 
+// URLのクエリパラメータ（?rafcid=...など）を除いた部分だけで比較する
+// 楽天のURLにはアフィリエイトIDが付くため、そのまま比較すると一致しない
+const stripQuery = url => (url || "").split("?")[0];
+
 // お気に入り商品の最新価格を各APIから取得して履歴に追記する
 // → 起動時に1回 + 毎日0時に自動実行
 async function refreshFavoritePrices() {
   const favs = loadFavorites();
   if (favs.length === 0) return;
   const hist  = loadFavoritesHistory();
-  const today = new Date().toISOString().split("T")[0];
+  const now   = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
   console.log(`🔄 お気に入り価格更新 (${favs.length}件)...`);
   for (const fav of favs) {
     try {
@@ -66,7 +71,8 @@ async function refreshFavoritePrices() {
       const items   = fav.source === "Rakuten"
         ? await fetchRakutenSearch(fav.keyword, 10)
         : await fetchYahooSearch(fav.keyword, 10);
-      const matched = items.find(i => i.url === fav.url) ?? items[0];
+      // URLのクエリパラメータを除いて比較（楽天のrafcidパラメータ対策）
+      const matched = items.find(i => stripQuery(i.url) === stripQuery(fav.url)) ?? items[0];
       if (!matched) continue;
       if (!hist[fav.id]) hist[fav.id] = [];
       const idx = hist[fav.id].findIndex(h => h.date === today);
@@ -255,6 +261,18 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
       res.end(JSON.stringify({ error: e.message }));
     }
+    return;
+  }
+
+  // ── 価格を今すぐ手動更新 POST /api/refresh-prices ─────────────
+  if (reqUrl.pathname === "/api/refresh-prices" && req.method === "POST") {
+    refreshFavoritePrices().then(() => {
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ ok: true }));
+    }).catch(e => {
+      res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: e.message }));
+    });
     return;
   }
 

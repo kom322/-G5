@@ -81,7 +81,10 @@ export async function fetchAmazonSearch(keyword, count = 10) {
 const YAHOO_API = "https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch";
 
 // ── 楽天市場（キーワード検索） ────────────────────────────────────
-// ichibams APIは applicationId + accessKey の両方が必要
+// 【API切り替え方法】
+//   ichibams API（現在）: IP制限あり。RAKUTEN_APP_ID + RAKUTEN_ACCESS_KEY が必要
+//   通常 Web Service API : IP制限なし。webservice.rakuten.co.jp で無料取得した
+//                          数字のapplicationIdを RAKUTEN_APP_ID に設定するだけで動く
 // ※ 末尾が数字で終わるキーワードはAPIに拒否されるため事前に除去する
 //   例: "Soundcore Liberty 5" → "Soundcore Liberty"
 export async function fetchRakutenSearch(keyword, count = 10) {
@@ -89,14 +92,16 @@ export async function fetchRakutenSearch(keyword, count = 10) {
   const accessKey = process.env.RAKUTEN_ACCESS_KEY;
   if (!appId || !accessKey) throw new Error("楽天APIキーが未設定");
 
-  // 末尾が数字単体で終わると楽天APIが拒否するため除去する（例: "Liberty 5" → "Liberty"）
-  const rakutenKeyword = keyword.replace(/\s+\d+$/, "").trim() || keyword;
+  // 末尾が数字で終わると楽天APIが拒否するため除去する
+  // 例: "Liberty 5" → "Liberty" / "iphone13" → "iphone"
+  // ただし "iPhone 13 mini" のように数字が末尾でない場合はそのまま
+  const rakutenKeyword = keyword.replace(/\s*\d+$/, "").trim() || keyword;
 
   const params = new URLSearchParams({
     applicationId: appId,
     accessKey,
-    keyword: rakutenKeyword,
-    hits: String(Math.min(count, 30)),
+    keyword:       rakutenKeyword,
+    hits:          String(Math.min(count, 30)),
   });
   const url = `https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260401?${params}`;
 

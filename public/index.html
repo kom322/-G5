@@ -228,7 +228,7 @@
 <body>
 
 <h1>🛡️ 安心価格ナビ</h1>
-<p class="subtitle">Yahoo!・楽天から価格と安全スコアをリアルタイム取得</p>
+<p class="subtitle">Yahoo!・楽天・Amazonから価格と安全スコアをリアルタイム取得</p>
 
 <!-- タブ -->
 <div class="tabs">
@@ -283,6 +283,12 @@
 
 <!-- ======== お気に入りタブ ======== -->
 <div id="tab-favs" style="display:none">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+    <button id="refresh-prices-btn" onclick="manualRefreshPrices()"
+      style="padding:6px 16px;background:#4a90d9;color:white;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer">
+      🔄 今すぐ価格を更新
+    </button>
+  </div>
   <div class="empty-state" id="favs-empty" style="display:none">
     <div class="icon">★</div>
     <p>お気に入りはまだありません</p>
@@ -750,6 +756,21 @@ function buildFavChart(favId, page) {
       },
     },
   });
+}
+
+async function manualRefreshPrices() {
+  const btn = document.getElementById("refresh-prices-btn");
+  btn.textContent = "更新中...";
+  btn.disabled = true;
+  try {
+    await fetch("/api/refresh-prices", { method: "POST" });
+    await loadAndRenderFavs();
+    btn.textContent = "✅ 更新完了";
+  } catch {
+    btn.textContent = "⚠ 更新失敗";
+  } finally {
+    setTimeout(() => { btn.textContent = "🔄 今すぐ価格を更新"; btn.disabled = false; }, 3000);
+  }
 }
 
 async function removeFav(id) {
