@@ -1,0 +1,165 @@
+{
+  "product": "Panasonic スチームアイロン NI-FS470",
+  "snapshots": [
+    {
+      "date": "2026-06-01",
+      "sites": {
+        "Amazon": {
+          "price": 3980,
+          "shipping": 0,
+          "seller": "Amazon.co.jp",
+          "rating": 4.3,
+          "reviewCount": 1250,
+          "hasReturnPolicy": true,
+          "isOfficial": true
+        },
+        "Rakuten": {
+          "price": 3600,
+          "shipping": 550,
+          "seller": "家電ショップ田中",
+          "rating": 3.8,
+          "reviewCount": 42,
+          "hasReturnPolicy": false,
+          "isOfficial": false
+        },
+        "Yahoo": {
+          "price": 3750,
+          "shipping": 0,
+          "seller": "パナソニック公式",
+          "rating": 4.6,
+          "reviewCount": 380,
+          "hasReturnPolicy": true,
+          "isOfficial": true
+        }
+      }
+    },
+    {
+      "date": "2026-06-02",
+      "sites": {
+        "Amazon": {
+          "price": 3900,
+          "shipping": 0,
+          "seller": "Amazon.co.jp",
+          "rating": 4.3,
+          "reviewCount": 1252,
+          "hasReturnPolicy": true,
+          "isOfficial": true
+        },
+        "Rakuten": {
+          "price": 3550,
+          "shipping": 550,
+          "seller": "家電ショップ田中",
+          "rating": 3.8,
+          "reviewCount": 43,
+          "hasReturnPolicy": false,
+          "isOfficial": false
+        },
+        "Yahoo": {
+          "price": 3800,
+          "shipping": 0,
+          "seller": "パナソニック公式",
+          "rating": 4.6,
+          "reviewCount": 382,
+          "hasReturnPolicy": true,
+          "isOfficial": true
+        }
+      }
+    },
+    {
+      "date": "2026-06-03",
+      "sites": {
+        "Amazon": {
+          "price": 3850,
+          "shipping": 0,
+          "seller": "Amazon.co.jp",
+          "rating": 4.3,
+          "reviewCount": 1260,
+          "hasReturnPolicy": true,
+          "isOfficial": true
+        },
+        "Rakuten": {
+          "price": 3500,
+          "shipping": 550,
+          "seller": "家電ショップ田中",
+          "rating": 3.8,
+          "reviewCount": 44,
+          "hasReturnPolicy": false,
+          "isOfficial": false
+        },
+        "Yahoo": {
+          "price": 3700,
+          "shipping": 0,
+          "seller": "パナソニック公式",
+          "rating": 4.6,
+          "reviewCount": 385,
+          "hasReturnPolicy": true,
+          "isOfficial": true
+        }
+      }
+    },
+    {
+      "date": "2026-06-04",
+      "sites": {
+        "Amazon": {
+          "price": 3920,
+          "shipping": 0,
+          "seller": "Amazon.co.jp",
+          "rating": 4.3,
+          "reviewCount": 1265,
+          "hasReturnPolicy": true,
+          "isOfficial": true
+        },
+        "Rakuten": {
+          "price": 3480,
+          "shipping": 550,
+          "seller": "家電ショップ田中",
+          "rating": 3.8,
+          "reviewCount": 44,
+          "hasReturnPolicy": false,
+          "isOfficial": false
+        },
+        "Yahoo": {
+          "price": 3680,
+          "shipping": 0,
+          "seller": "パナソニック公式",
+          "rating": 4.6,
+          "reviewCount": 388,
+          "hasReturnPolicy": true,
+          "isOfficial": true
+        }
+      }
+    },
+    {
+      "date": "2026-06-05",
+      "sites": {
+        "Amazon": {
+          "price": 3780,
+          "shipping": 0,
+          "seller": "Amazon.co.jp",
+          "rating": 4.3,
+          "reviewCount": 1270,
+          "hasReturnPolicy": true,
+          "isOfficial": true
+        },
+        "Rakuten": {
+          "price": 3450,
+          "shipping": 550,
+          "seller": "家電ショップ田中",
+          "rating": 3.8,
+          "reviewCount": 45,
+          "hasReturnPolicy": false,
+          "isOfficial": false
+        },
+        "Yahoo": {
+          "price": 3650,
+          "shipping": 0,
+          "seller": "パナソニック公式",
+          "rating": 4.6,
+          "reviewCount": 390,
+          "hasReturnPolicy": true,
+          "isOfficial": true
+        }
+      }
+    }
+  ]
+}
