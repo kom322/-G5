@@ -4,7 +4,7 @@
 // ネットワーク通信やファイル読み込みはしない。
 
 /**
- * 実質価格を計算する
+ * 実質価格を計算する。
  * 例: 商品3,980円 + 送料550円 → 実質4,530円
  */
 export function calcActualPrice(price, shipping) {
